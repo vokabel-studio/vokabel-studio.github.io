@@ -1,7 +1,7 @@
 # Vokabel-Studio
 
 Vokabel-Lern-App für Schülerinnen und Schüler am Gymnasium (NRW), Englisch und Latein.
-Web-App (PWA) für iPhone, iPad und Android, alle Daten bleiben lokal auf dem Gerät. KI-Auswertung ist optional (eigener Gratis-Schlüssel, bleibt auf dem Gerät).
+Web-App (PWA) für iPhone, iPad und Android, alle Daten bleiben lokal auf dem Gerät. KI-Auswertung und Cloud-Abgleich sind optional. Details: in der App unter „Für Eltern › Datenschutz & Sicherheit“.
 
 **App öffnen:** https://vokabel-studio.github.io/
 
@@ -30,6 +30,9 @@ Wichtig: Safari und die Home-Bildschirm-App haben getrennte Speicher. Am besten 
 | + | Alles nachträglich bearbeiten/löschen (Bücher, Units, Parts, Vokabeln, Lernsätze, Satzbau, Termine), Vokabeln/Units von Hand anlegen, Lernstand je Unit zurücksetzen, angefangene Übung fortsetzen, Tagesziel pro Tag | ✅ (Beta) |
 | + | Gutscheine der Eltern (eigener Text, Freischalten durch Lernen, Einlösen per PIN), Hör-Quiz für unterwegs (Auto über CarPlay/Android Auto/Bluetooth) | ✅ (Beta) |
 | + | OpenRouter als vierter kostenloser KI-Anbieter (nur Gratis-Modelle), Einlesen per kopiertem Text (Google Lens / Live Text) statt Foto | ✅ (Beta) |
+| + | Geräte abgleichen: Handy zu Handy per QR-Code (offline), automatisch über OneDrive; Zusammenführen statt Überschreiben, Gelöscht-Liste. Google Drive, Dropbox, WebDAV geplant | ✅ (Beta) |
+| + | Bedienung überarbeitet (Startseite, „Sichern & Abgleichen“), Textgröße einstellbar, Barrierefreiheit nach WCAG 2.2 AA (automatisch geprüft für alle Styles, hell und dunkel) | ✅ (Beta) |
+| + | Datenschutz & Sicherheit: Elterninformation in der App, Content-Security-Policy (App spricht nur mit KI-Anbietern und Microsoft) | ✅ (Beta) |
 
 **Bekannte Einschränkung iPhone/iPad:** Die Spracheingabe der App liefert unter iOS nur beim ersten Versuch nach dem App-Start Ton (Gerätetests Nov. 2026). Auf iOS wird deshalb das Tastatur-Diktat empfohlen; der App-Mikrofonknopf ist dort ausgeblendet.
 
@@ -51,7 +54,7 @@ Lokal starten: `python -m http.server 8765` und http://localhost:8765 öffnen.
 Entwickelt wird im Repo `vokabel-studio/beta` (Testversion unter `/beta/`). Die Live-App `vokabel-studio/vokabel-studio.github.io` wird nur über den Freigabe-Knopf aktualisiert.
 
 1. **Tests:** Bei jeder Änderung laufen automatisch die Tests in `tests/` (GitHub › Actions › „Tests“), je einmal als Android-Handy (Chromium) und als iPhone (WebKit). Lokal: `npm install`, dann `npm test`.
-   Geprüft werden u. a. Lernarten, Einlesen (mit nachgebauter KI), Bearbeiten/Löschen, Gutscheine, Sicherung – auch das Laden einer Sicherung aus Version 2.7 (`tests/fixtures/`) – sowie Versionsnummern und Offline-Dateiliste.
+   Geprüft werden u. a. Barrierefreiheit (axe, WCAG 2.2 AA, alle Styles hell/dunkel), Lernarten, Einlesen (mit nachgebauter KI), Bearbeiten/Löschen, Gutscheine, Sicherung – auch das Laden einer Sicherung aus Version 2.7 (`tests/fixtures/`) – sowie Versionsnummern und Offline-Dateiliste.
 2. **Von Hand auf echten Geräten:** Mikrofon, Kamera, Teilen-Menü, Vorlese-Stimmen, Ton im Auto.
 3. **Live freigeben:** Actions › „Live freigeben“ › *Run workflow*. Läuft die Tests, prüft, dass die Versionsnummer erhöht wurde, kopiert die App-Dateien (ohne Tests, siehe `.github/live-ausschluss.txt`) in die Live-App und testet sie danach online.
 4. **Notbremse:** Actions › „Live zurücksetzen“ macht die letzte Freigabe rückgängig.

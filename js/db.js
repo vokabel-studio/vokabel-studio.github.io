@@ -1,6 +1,6 @@
 // Kleine IndexedDB-Schicht. Alle Daten bleiben auf dem Gerät.
 import { DB_NAME } from './config.js';
-const DB_VERSION = 1;
+const DB_VERSION = 2;   // 2: Gelöscht-Liste für den Abgleich zwischen Geräten
 
 // store: [keyPath, [indexName, keyPath]...]
 const STORES = {
@@ -19,10 +19,17 @@ const STORES = {
   termine: ['id', ['profilId', 'profilId']],
   tests: ['id', ['profilId', 'profilId']],
   belohnungen: ['profilId'],
-  meta: ['key']
+  meta: ['key'],
+  geloescht: ['key']   // „Grabsteine“: was wann gelöscht wurde, damit ein Abgleich es nicht zurückholt
 };
 export const INHALT_STORES = ['faecher', 'lehrwerke', 'units', 'parts', 'vokabeln', 'lernsaetze', 'satzbau', 'material'];
 export const LERN_STORES = ['lernstand', 'ereignisse', 'termine', 'tests', 'belohnungen'];
+/** Diese Speicher werden zwischen Geräten abgeglichen (Sicherung, QR-Übertragung, Cloud). */
+export const SYNC_STORES = [...INHALT_STORES, 'profile', ...LERN_STORES];
+export const SCHLUESSEL = Object.fromEntries(Object.entries(STORES).map(([n, [k]]) => [n, k]));
+// Antworten (ereignisse) werden nur angehängt und nach 60 Tagen zusammengefasst – dafür keine Grabsteine
+const OHNE_GRABSTEIN = new Set(['ereignisse']);
+const jetzt = () => new Date().toISOString();
 
 let dbPromise;
 export function openDb() {
@@ -59,8 +66,9 @@ async function store(name, mode = 'readonly') {
 export async function get(name, key) { return wrap((await store(name)).get(key)); }
 export async function all(name) { return wrap((await store(name)).getAll()); }
 export async function byIndex(name, index, value) { return wrap((await store(name)).index(index).getAll(value)); }
-export async function put(name, value) { return wrap((await store(name, 'readwrite')).put(value)); }
-export async function del(name, key) { return wrap((await store(name, 'readwrite')).delete(key)); }
+// Jeder gespeicherte Eintrag eines Sync-Speichers bekommt den Änderungszeitpunkt _g; jedes Löschen einen Grabstein.
+export async function put(name, value) { return batch([{ store: name, op: 'put', value }]); }
+export async function del(name, key) { return batch([{ store: name, op: 'del', key }]); }
 // Zählen und Schlüssel holen, ohne die ganzen Einträge zu laden (schneller bei vielen Vokabeln)
 export async function count(name) { return wrap((await store(name)).count()); }
 export async function countByIndex(name, index, value) { return wrap((await store(name)).index(index).count(value)); }
@@ -68,8 +76,19 @@ export async function keys(name) { return wrap((await store(name)).getAllKeys())
 export async function keysByIndex(name, index, value) { return wrap((await store(name)).index(index).getAllKeys(value)); }
 
 // Mehrere Schreibvorgänge in einer Transaktion: ops = [{store, op:'put'|'del', value|key}]
-export async function batch(ops) {
+// roh: true = so übernehmen, wie es ist (beim Abgleich: fremde Zeitstempel behalten, keine neuen Grabsteine)
+export async function batch(ops, { roh = false } = {}) {
   const db = await openDb();
+  if (!roh) {
+    const t = jetzt();
+    const grabsteine = [];
+    for (const o of ops) {
+      if (!SYNC_STORES.includes(o.store)) continue;
+      if (o.op === 'del') { if (!OHNE_GRABSTEIN.has(o.store)) grabsteine.push({ store: 'geloescht', op: 'put', value: { key: `${o.store}|${o.key}`, store: o.store, id: o.key, am: t } }); }
+      else if (o.value && typeof o.value === 'object') o.value._g = t;
+    }
+    ops = [...ops, ...grabsteine];
+  }
   const names = [...new Set(ops.map((o) => o.store))];
   if (!names.length) return;
   return new Promise((resolve, reject) => {

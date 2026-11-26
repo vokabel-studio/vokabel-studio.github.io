@@ -11,7 +11,7 @@ export async function erstelleBackup() {
   for (const s of db.LERN_STORES) lerndaten[s] = await db.all(s);
   return {
     format: FORMAT, schemaVersion: VERSION, exportiertAm: new Date().toISOString(), umfang: 'alles',
-    inhalte, profile: await db.all('profile'), lerndaten
+    inhalte, profile: await db.all('profile'), lerndaten, geloescht: await db.all('geloescht')
   };
 }
 
@@ -54,12 +54,9 @@ export function zusammenfassung(obj) {
   };
 }
 
-// Zusammenführen: gleiche IDs werden überschrieben, alles andere bleibt.
+// Sicherung laden: Inhalte der Sicherung übernehmen (sie gewinnt gegenüber diesem Gerät), alles andere bleibt.
 export async function spieleEin(obj) {
-  const ops = [];
-  for (const s of db.INHALT_STORES) for (const v of obj.inhalte?.[s] || []) ops.push({ store: s, op: 'put', value: v });
-  for (const v of obj.profile || []) ops.push({ store: 'profile', op: 'put', value: v });
-  for (const s of db.LERN_STORES) for (const v of obj.lerndaten?.[s] || []) ops.push({ store: s, op: 'put', value: v });
-  await db.batch(ops);
-  return ops.length;
+  const S = await import('./sync.js');
+  const r = await S.fuehreZusammen(S.ausSicherung(obj), { wiederherstellen: true });
+  return r.neu + r.geaendert;
 }

@@ -2,7 +2,7 @@
 // Bei jeder Änderung an App-Dateien VERSION erhöhen (und APP_VERSION in js/config.js gleich setzen).
 // Cache-Name enthält den Pfad, damit Live- und Beta-Version sich nicht gegenseitig löschen
 const PREFIX = 'vs-' + new URL(self.registration.scope).pathname + '-';
-const VERSION = PREFIX + '2.10.2';
+const VERSION = PREFIX + '2.13.0';
 const NETZ_WARTEN = 3000;   // so lange aufs Netz warten, danach (falls vorhanden) die gespeicherte Datei nehmen
 const DATEIEN = [
   './', 'index.html', 'diagnose.html', 'manifest.webmanifest',
@@ -10,6 +10,7 @@ const DATEIEN = [
   'js/app.js', 'js/db.js', 'js/util.js', 'js/faecher.js', 'js/import.js',
   'js/prompt.js', 'js/backup.js', 'js/speech.js', 'js/views.js', 'js/import-view.js',
   'js/config.js', 'js/lernen.js', 'js/belohnung.js', 'js/latein.js', 'js/lern-views.js', 'js/plan-views.js', 'js/sicherung.js', 'js/design.js', 'js/avatare.js', 'js/effekte.js', 'js/ki.js', 'js/pakete.js', 'js/teilen-views.js', 'js/styles.js', 'js/gutscheine.js', 'js/hoerquiz.js',
+  'js/frueh.js', 'js/datenschutz-views.js', 'js/sync.js', 'js/qr.js', 'js/cloud.js', 'js/cloud-onedrive.js', 'js/abgleich-views.js', 'js/lib/uqr.mjs', 'js/lib/jsQR.js',
   'demo/demo-englisch.json', 'demo/demo-latein.json',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/logo-96.png', 'icons/logo-256.png', 'icons/styles/rock-96.png', 'icons/styles/pop-96.png', 'icons/styles/hiphop-96.png'
 ];

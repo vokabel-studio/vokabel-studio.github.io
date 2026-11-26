@@ -348,7 +348,7 @@ async function kontrolle(ctx) {
     ${meldungenHtml([], W.warnungen)}
     ${d.hinweise.length ? `<div class="msg info"><strong>Hinweise vom Chatbot:</strong><ul>${d.hinweise.map((h) => `<li>${esc(h)}</li>`).join('')}</ul></div>` : ''}
     <p class="muted small">Vergleiche mit dem Buch. <span class="badge warn">gelb</span> = Chatbot war unsicher, <span class="badge err">rot</span> = etwas fehlt, grau = schon vorhanden.</p>
-    ${d.parts.map((p) => `<h3>Part ${esc(p.kennung)}</h3>${p.vokabeln.map((v, i) => karte(v, i + 1, p.kennung)).join('')}`).join('')}
+    ${d.parts.map((p) => `<h2 data-h="3">Part ${esc(p.kennung)}</h2>${p.vokabeln.map((v, i) => karte(v, i + 1, p.kennung)).join('')}`).join('')}
     <div id="w-summe" class="card" style="position:sticky;bottom:calc(8px + env(safe-area-inset-bottom));z-index:5"></div>
     <div class="btn-row"><button class="btn secondary" id="w-zurueck">‹ Andere Antwort einfügen</button></div>`;
   return {

@@ -11,7 +11,7 @@ import { APP_VERSION, ALTE_ADRESSE, NEUE_ADRESSE } from './config.js';
 function umzugKarte() {
   if (!ALTE_ADRESSE) return '';
   return `<div class="card umzug">
-    <h3 style="margin-top:0">📦 Vokabel-Studio ist umgezogen</h3>
+    <h2 data-h="3" style="margin-top:0">📦 Vokabel-Studio ist umgezogen</h2>
     <p>Die App hat eine neue Adresse: <strong>${esc(NEUE_ADRESSE.replace('https://', ''))}</strong><br>
     Deine Daten ziehen <strong>nicht</strong> automatisch mit. So geht der Umzug:</p>
     <ol style="padding-left:22px">
@@ -34,7 +34,7 @@ function bindUmzug(root) {
   };
 }
 import { KATEGORIEN, INI_FARBEN, avatarHtml, istInitialen, parseInitialen, initialen, zufall } from './avatare.js';
-import { DESIGNS, setzeDesign } from './design.js';
+import { DESIGNS, setzeDesign, TEXTGROESSEN, setzeTextgroesse } from './design.js';
 import * as fx from './effekte.js';
 import { STYLES, E, setzeStyle } from './styles.js';
 
@@ -73,6 +73,8 @@ export async function profileView(_p, ctx) {
       <p class="small"><strong>Du ziehst um oder hast ein neues Gerät?</strong> Dann lade einfach deine Sicherung:</p>
       <label class="btn secondary block" for="pv-sicherung">📂 Sicherung laden</label>
       <input id="pv-sicherung" type="file" accept=".json,application/json" hidden>
+      <a class="btn secondary block" href="#/qr-empfangen" style="margin-top:10px">📲 Von einem anderen Handy übertragen (QR-Code)</a>
+      <p class="small" style="margin-bottom:0"><a href="#/datenschutz">🔒 Datenschutz: Alle Daten bleiben auf diesem Gerät – mehr erfahren</a></p>
       <div id="pv-info"></div></div>`}
     <div class="profile-grid">
       ${profile.map((p) => `
@@ -84,7 +86,7 @@ export async function profileView(_p, ctx) {
         <span class="tile-icon">➕</span><span class="tile-title">Neues Profil</span>
       </a>
     </div>
-    ${profile.length ? `<h3>Profile bearbeiten</h3><div class="card" style="padding:0"><ul class="list">
+    ${profile.length ? `<h2 data-h="3">Profile bearbeiten</h2><div class="card" style="padding:0"><ul class="list">
       ${profile.map((p) => `<li><a class="list-item" href="#/profil/${esc(p.id)}"><span>${avatarHtml(p.avatar, 22)}</span><span class="grow">${esc(p.name)}</span><span class="chev">›</span></a></li>`).join('')}
     </ul></div>` : ''}`;
   return {
@@ -203,6 +205,7 @@ export async function homeView(_p, ctx) {
   const zuletzt = units.filter((u) => meine.has(u.id)).sort((a, b) => (b.geaendertAm || '').localeCompare(a.geaendertAm || '')).slice(0, 3);
   const { erinnerungFaellig } = await import('./sicherung.js');
   const erinnerung = await erinnerungFaellig();
+  const cloud = await db.getMeta('cloud');
   const [fz, termin, bel] = await Promise.all([nVok ? L.faelligZahlen(ctx.profil) : { faellig: 0, neu: 0, neuHeute: 0 }, naechsterTermin(ctx.profil.id), hole(ctx.profil.id)]);
   const offen = LV.offeneSitzung(ctx.profil.id);
   const gutscheine = await (await import('./gutscheine.js')).offene(ctx.profil.id);
@@ -219,7 +222,8 @@ export async function homeView(_p, ctx) {
     ${umzugKarte()}
     <h2 style="margin-top:4px">Hallo ${esc(ctx.profil.name)}! ${avatarHtml(ctx.profil.avatar, 22)}</h2>
     <p class="muted">${plural(units.length, 'Unit', 'Units')} · ${plural(nVok, 'Vokabel', 'Vokabeln')} auf diesem Gerät</p>
-    ${erinnerung ? `<a class="msg warn" href="#/backup" style="display:block;text-decoration:none">💾 ${erinnerung.seit === null ? 'Du hast noch nie gesichert.' : `Letzte Sicherung vor ${erinnerung.seit} Tagen.`} <strong>Jetzt sichern ›</strong></a>` : ''}
+    ${cloud?.status === 'anmelden' ? '<a class="msg warn" href="#/backup" style="display:block;text-decoration:none">☁️ Abgleich pausiert: Bitte kurz neu bei OneDrive anmelden <strong>›</strong></a>' : ''}
+    ${erinnerung ? `<a class="msg warn" href="#/backup" style="display:block;text-decoration:none">💾 ${erinnerung.seit === null ? 'Deine Daten liegen bisher nur auf diesem Gerät.' : `Letzte Sicherung vor ${erinnerung.seit} Tagen.`} <strong>Jetzt sichern ›</strong></a>` : ''}
     ${gutscheine.length ? `<a class="msg ok" href="#/erfolge" style="display:block;text-decoration:none">🎟️ Du hast ${gutscheine.length === 1 ? 'einen Gutschein' : `${gutscheine.length} Gutscheine`} zum Einlösen: <strong>${esc(gutscheine.map((g) => g.text).join(', '))}</strong> ›</a>` : ''}
     ${offen ? LV.fortsetzenKarte(offen) : ''}
     ${nVok ? `<div class="card heute">
@@ -229,21 +233,31 @@ export async function homeView(_p, ctx) {
       ${heuteInfo.termin ? `<p class="small" style="margin:6px 0">📝 <a href="#/termin/${esc(heuteInfo.termin.id)}">${esc(heuteInfo.termin.titel)}</a> ${heuteInfo.terminText}</p>` : ''}
       <a class="btn block" href="${heuteInfo.termin && heuteInfo.terminOffen ? '#/termin/' + esc(heuteInfo.termin.id) : heuteInfo.faellig || heuteInfo.neuHeute ? '#/plan' : '#/lernen'}">${heuteInfo.termin && heuteInfo.terminOffen ? '📅 Heutige Aufgaben' : (heuteInfo.faellig || heuteInfo.neuHeute ? '🔁 Jetzt lernen' : E('lernen') + ' Lernen')}</a>
     </div>` : ''}
-    <div class="grid">
-      ${tile('#/lernen', E('lernen'), 'Lernen', 'Karten, Abfrage, Satzbau, Test')}
+    <nav aria-label="Hauptbereiche"><div class="grid">
+      ${tile('#/lernen', E('lernen'), 'Lernen', 'Karten, Abfrage, Satzbau, Test, Hör-Quiz')}
       ${tile('#/plan', E('plan'), 'Lernplan', 'Fälliges & Vokabeltest-Termine')}
-      ${tile('#/import', E('import'), 'Vokabelseite einlesen', 'Foto → KI oder Chatbot → fertig')}
-      ${tile('#/bibliothek', E('buecher'), 'Meine Bücher', 'Units und Vokabeln ansehen')}
-      ${tile('#/erfolge', E('erfolge'), 'Erfolge', `${E('punkt')} ${heuteInfo.punkte} Punkte · ${E('serie')} ${heuteInfo.serie} Tage`)}
-      ${tile('#/eltern', E('eltern'), 'Eltern', 'Lernfortschritt ansehen')}
-      ${tile('#/backup', E('sicherung'), 'Sicherung', 'Daten sichern und laden')}
-      ${tile('#/einstellungen', E('einstellungen'), 'Einstellungen', 'Vorlesen, iPhone-Test')}
+      ${tile('#/import', E('import'), 'Vokabelseite einlesen', 'Foto oder Text → fertige Vokabeln')}
+      ${tile('#/bibliothek', E('buecher'), 'Meine Bücher', 'Units und Vokabeln ansehen und bearbeiten')}
     </div>
-    ${zuletzt.length ? `<h3>Zuletzt bearbeitet</h3><div class="card" style="padding:0"><ul class="list">
+    <a class="card list-item" href="#/erfolge" style="margin:12px 0">
+      <span class="mehr-icon" aria-hidden="true">${E('erfolge')}</span>
+      <span class="grow"><span class="vok-wort">Meine Erfolge</span><br>
+        <span class="vok-de">${E('punkt')} ${heuteInfo.punkte} Punkte · ${E('serie')} ${plural(heuteInfo.serie, 'Tag', 'Tage')} am Stück · Abzeichen & Gutscheine</span></span>
+      <span class="chev" aria-hidden="true">›</span></a></nav>
+    ${zuletzt.length ? `<h2 data-h="3">Zuletzt bearbeitet</h2><div class="card" style="padding:0"><ul class="list">
       ${zuletzt.map((u) => `<li><a class="list-item" href="#/unit/${esc(u.id)}"><span class="grow">
         <span class="vok-wort">${uWort(getFach(lehrwerke.get(u.lehrwerkId)?.fachId))} ${esc(u.nummer)}${u.titel ? ' – ' + esc(u.titel) : ''}</span><br>
-        <span class="vok-de">${esc(lehrwerke.get(u.lehrwerkId) ? lehrwerkName(lehrwerke.get(u.lehrwerkId)) : '')}</span></span><span class="chev">›</span></a></li>`).join('')}
+        <span class="vok-de">${esc(lehrwerke.get(u.lehrwerkId) ? lehrwerkName(lehrwerke.get(u.lehrwerkId)) : '')}</span></span><span class="chev" aria-hidden="true">›</span></a></li>`).join('')}
     </ul></div>` : ''}
+    <h2 data-h="3">Mehr</h2>
+    <nav aria-label="Weitere Bereiche" class="card mehr-liste" style="padding:0"><ul class="list">
+      <li><a class="list-item" href="#/backup"><span class="mehr-icon" aria-hidden="true">${E('sicherung')}</span><span class="grow"><span class="vok-wort">Sichern & Abgleichen</span><br>
+        <span class="vok-de">${cloud?.anbieter ? `Abgleich mit ${cloud.anbieter === 'onedrive' ? 'OneDrive' : 'der Cloud'} aktiv` : 'Daten schützen, zweites Gerät verbinden'}</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a class="list-item" href="#/einstellungen"><span class="mehr-icon" aria-hidden="true">${E('einstellungen')}</span><span class="grow"><span class="vok-wort">Einstellungen</span><br>
+        <span class="vok-de">Aussehen, Textgröße, Vorlesen, Abfrage</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a class="list-item" href="#/eltern"><span class="mehr-icon" aria-hidden="true">${E('eltern')}</span><span class="grow"><span class="vok-wort">Für Eltern</span><br>
+        <span class="vok-de">Lernfortschritt, Gutscheine, KI-Anbindung (mit PIN)</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+    </ul></nav>
     ${isIOS() && !isStandalone() ? `<div class="msg info small">📱 Tipp: In Safari auf <strong>Teilen ⬆︎ › Zum Home-Bildschirm</strong> tippen. Dann startet Vokabel-Studio wie eine App.<br>
       Achtung: Safari und die Home-Bildschirm-App speichern getrennt. Lege die App am besten <strong>vor</strong> dem ersten Einlesen auf den Home-Bildschirm.</div>` : ''}`;
   return { title: 'Vokabel-Studio', logo: true, html, bind(root) { bindUmzug(root); LV.bindFortsetzen(root, ctx); } };
@@ -431,7 +445,7 @@ export async function unitView({ id }, ctx) {
     ${parts.map((p) => {
       const pv = voks.filter((v) => v.partId === p.id);
       if (!pv.length) return '';
-      return `<h3>Part ${esc(p.kennung)}${p.titel ? ' – ' + esc(p.titel) : ''} <span class="badge">${pv.length}</span></h3>
+      return `<h2 data-h="3">Part ${esc(p.kennung)}${p.titel ? ' – ' + esc(p.titel) : ''} <span class="badge">${pv.length}</span></h2>
         <div class="card" style="padding:0"><ul class="list">
         ${pv.map((v) => `<li><a class="list-item" href="#/vokabel/${esc(v.id)}">
           <span class="grow"><span class="vok-wort">${esc(v.wort)}</span>
@@ -493,32 +507,32 @@ export async function unitFormView({ id, lwId }, ctx) {
       </div>
     </div>
     ${d ? `
-    <h3>Parts</h3>
+    <h2 data-h="3">Parts</h2>
     <div class="card bearb-liste">
       ${parts.length ? parts.map((p) => `<div class="bearb-zeile" data-zeile="part" data-key="${esc(p.id)}">
         <input type="text" class="pt-kennung" value="${esc(p.kennung)}" aria-label="Part" style="max-width:80px">
-        <input type="text" class="pt-titel" value="${esc(p.titel || '')}" placeholder="Titel (freiwillig)">
+        <input type="text" class="pt-titel" aria-label="Titel des Parts" value="${esc(p.titel || '')}" placeholder="Titel (freiwillig)">
         <span class="badge" title="Vokabeln">${nProPart.get(p.id)}</span>${wegKnopf('part', p.id)}</div>`).join('') : '<p class="muted small">Noch keine Parts.</p>'}
       <p class="muted small">Wird ein Part gelöscht, werden auch seine Vokabeln gelöscht. Einzelne Vokabeln verschiebst du über „Bearbeiten“ bei der Vokabel in einen anderen Part.</p>
     </div>
-    <h3>Lernsätze (${saetze.length})</h3>
+    <h2 data-h="3">Lernsätze (${saetze.length})</h2>
     <div class="card bearb-liste">
       ${saetze.length ? saetze.map((x) => `<div class="bearb-zeile spalten" data-zeile="satz" data-key="${esc(x.id)}">
         <div class="grow"><textarea class="ls-fremd" rows="2" lang="${fach.kurz}" aria-label="Satz in der Fremdsprache">${esc(x.fremd)}</textarea>
         <textarea class="ls-deutsch" rows="2" aria-label="Deutsch">${esc(x.deutsch)}</textarea></div>${wegKnopf('satz', x.id)}</div>`).join('') : '<p class="muted small">Keine Lernsätze.</p>'}
     </div>
-    <h3>Satzbau-Aufgaben (${satzbau.length})</h3>
+    <h2 data-h="3">Satzbau-Aufgaben (${satzbau.length})</h2>
     <div class="card bearb-liste">
       ${satzbau.length ? satzbau.map((x) => `<div class="bearb-zeile spalten" data-zeile="satzbau" data-key="${esc(x.id)}">
-        <div class="grow"><label class="small muted">Deutsch</label><textarea class="sb-deutsch" rows="2">${esc(x.deutsch)}</textarea>
-        <label class="small muted">Lösung</label><textarea class="sb-loesung" rows="2" lang="${fach.kurz}">${esc(x.loesung)}</textarea>
-        <label class="small muted">Auch richtig (mit / trennen)</label><textarea class="sb-alt" rows="2">${esc((x.alternativen || []).join(' / '))}</textarea>
-        <label class="small muted">Falsche Zusatz-Bausteine (mit Komma)</label><input type="text" class="sb-abl" value="${esc((x.ablenker || []).join(', '))}"></div>
+        <div class="grow"><label class="small muted">Deutsch</label><textarea class="sb-deutsch" rows="2" aria-label="Deutscher Satz">${esc(x.deutsch)}</textarea>
+        <label class="small muted">Lösung</label><textarea class="sb-loesung" rows="2" aria-label="Lösung" lang="${fach.kurz}">${esc(x.loesung)}</textarea>
+        <label class="small muted">Auch richtig (mit / trennen)</label><textarea class="sb-alt" rows="2" aria-label="Auch richtig">${esc((x.alternativen || []).join(' / '))}</textarea>
+        <label class="small muted">Falsche Zusatz-Bausteine (mit Komma)</label><input type="text" class="sb-abl" aria-label="Falsche Zusatz-Bausteine" value="${esc((x.ablenker || []).join(', '))}"></div>
         ${wegKnopf('satzbau', x.id)}</div>`).join('') : '<p class="muted small">Keine Satzbau-Aufgaben.</p>'}
     </div>` : `<p class="muted small">Danach kannst du Vokabeln von Hand hinzufügen oder Seiten einlesen.</p>`}
     <div class="btn-row"><button class="btn" id="uf-save">${d ? 'Alles speichern' : `${W} anlegen`}</button></div>
     ${d && voks.length ? `<div class="card">
-      <h3 style="margin-top:0">🔄 Lernstand zurücksetzen</h3>
+      <h2 data-h="3" style="margin-top:0">🔄 Lernstand zurücksetzen</h2>
       <p class="small">Alle ${plural(voks.length, 'Vokabel', 'Vokabeln')} dieser ${W} gelten für <strong>${esc(ctx.profil.name)}</strong> wieder als „neu“. Andere Profile sind nicht betroffen.</p>
       <button class="btn secondary block" id="uf-reset">Lernstand von ${esc(ctx.profil.name)} zurücksetzen</button></div>` : ''}`;
   return {
@@ -603,13 +617,13 @@ export function formenHtml(v, fach) {
     if (f.steigerung) z.push(['Steigerung', f.steigerung]);
   }
   if (!z.length) return '';
-  return `<div class="info-block"><h4>Formen</h4><ul>${z.map(([k, w]) => `<li><strong>${esc(k)}:</strong> ${esc(w)}</li>`).join('')}</ul></div>`;
+  return `<div class="info-block"><h2 data-h="4">Formen</h2><ul>${z.map(([k, w]) => `<li><strong>${esc(k)}:</strong> ${esc(w)}</li>`).join('')}</ul></div>`;
 }
 
 export function karteHtml(v, fach) {
   const lang = fach.vorlesen.stimmeSprache;
   const sprechWort = v.wort.replace(/^\(to\)\s*/, 'to ');
-  const block = (titel, items) => items?.length ? `<div class="info-block"><h4>${titel}</h4><ul>${items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '';
+  const block = (titel, items) => items?.length ? `<div class="info-block"><h2 data-h="4">${titel}</h2><ul>${items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '';
   return `
     <div class="card flash">
       <div class="muted small">${esc(WORTART_NAMEN[v.wortart] || '')}</div>
@@ -623,18 +637,18 @@ export function karteHtml(v, fach) {
       <div class="btn-row"><button class="btn soft" id="v-geprueft">✓ Stimmt so</button><a class="btn secondary" href="#/vokabel-bearbeiten/${esc(v.id)}">Korrigieren</a></div></div>` : ''}
     <div class="card">
       ${formenHtml(v, fach)}
-      ${v.erklaerung ? `<div class="info-block"><h4>Erklärung</h4><p lang="${fach.kurz}">${esc(v.erklaerung)} ${speakBtn(v.erklaerung, lang, true)}</p></div>` : ''}
-      ${v.beispiele?.length ? `<div class="info-block"><h4>Beispiele</h4>${v.beispiele.map((b) => `
+      ${v.erklaerung ? `<div class="info-block"><h2 data-h="4">Erklärung</h2><p lang="${fach.kurz}">${esc(v.erklaerung)} ${speakBtn(v.erklaerung, lang, true)}</p></div>` : ''}
+      ${v.beispiele?.length ? `<div class="info-block"><h2 data-h="4">Beispiele</h2>${v.beispiele.map((b) => `
         <div class="beispiel"><span class="fr" lang="${fach.kurz}">${esc(b.fremd)}</span> ${speakBtn(b.fremd, lang, true)}
         ${b.deutsch ? `<br><span class="muted">${esc(b.deutsch)}</span>` : ''}
         ${b.quelle === 'ki' ? ' <span class="badge small">neu formuliert</span>' : ''}</div>`).join('')}</div>` : ''}
       ${block('Gegenteil', v.gegenteile)}
       ${block('Ähnliche Wörter', v.synonyme)}
       ${block('Wortfamilie', v.wortfamilie)}
-      ${v.andereSprachen?.length ? `<div class="info-block"><h4>In anderen Sprachen</h4><ul>${v.andereSprachen.map((a) =>
+      ${v.andereSprachen?.length ? `<div class="info-block"><h2 data-h="4">In anderen Sprachen</h2><ul>${v.andereSprachen.map((a) =>
         `<li><span class="badge" title="${esc(SPRACH_LANG[a.sprache] || a.sprache)}">${esc(SPRACH_NAMEN[a.sprache] || a.sprache)}</span> ${esc(a.wort)}${a.bedeutung ? ` <span class="muted">(${esc(a.bedeutung)})</span>` : ''}</li>`).join('')}</ul></div>` : ''}
-      ${v.stolpersteine?.length ? `<div class="info-block"><h4>⚠️ Stolpersteine</h4><ul>${v.stolpersteine.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
-      ${v.merkhilfe ? `<div class="info-block"><h4>💡 Merkhilfe</h4><p>${esc(v.merkhilfe)}</p></div>` : ''}
+      ${v.stolpersteine?.length ? `<div class="info-block"><h2 data-h="4">⚠️ Stolpersteine</h2><ul>${v.stolpersteine.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+      ${v.merkhilfe ? `<div class="info-block"><h2 data-h="4">💡 Merkhilfe</h2><p>${esc(v.merkhilfe)}</p></div>` : ''}
     </div>`;
 }
 
@@ -690,7 +704,7 @@ export async function vokabelFormView({ id, unitId }, ctx) {
       <div><label for="vf-part">Part</label><select id="vf-part">${d.parts.map((p) => `<option value="${p.id}" ${p.id === v.partId ? 'selected' : ''}>${esc(p.kennung)}</option>`).join('')}<option value="__neu" ${d.parts.length ? '' : 'selected'}>➕ neuer Part …</option></select></div>
     </div>
     ${inp('bedeutungen', 'Bedeutungen (mit ; trennen)', v.bedeutungen.join('; '))}
-    <h3>Formen</h3>
+    <h2 data-h="3">Formen</h2>
     <div class="field-row">
       ${latein ? `
         ${inp('genitiv', 'Genitiv', f.genitiv)}
@@ -784,61 +798,70 @@ export async function backupView(_p, ctx) {
   const seit = letzte ? Math.floor((Date.now() - new Date(letzte).getTime()) / 86400000) : null;
   const artText = { ordner: 'in den Sicherungsordner', geteilt: 'über Teilen', heruntergeladen: 'als Download' }[art] || '';
   const mobil = isIOS() || /Android/i.test(navigator.userAgent);
+  const AB = await import('./abgleich-views.js');
+  const abgleich = await AB.abgleichKarte();
+  const cloud = await db.getMeta('cloud');
+  const cloudOk = cloud?.anbieter && cloud.status === 'ok' && cloud.zuletzt;
+  const dateiAlt = seit === null || seit >= (erinnerung || 999);
+  const geschuetzt = cloudOk || !dateiAlt;
+  const cloudName = cloud?.anbieter === 'onedrive' ? 'OneDrive' : 'Cloud';
   const html = `
-    <div class="card">
-      <h3 style="margin-top:0">💾 Sicherung erstellen</h3>
-      <p>Alle Bücher, Vokabeln, Profile und Lernstände kommen in <strong>eine Datei</strong>.</p>
-      <p class="small ${seit === null || seit >= (erinnerung || 999) ? 'msg warn' : 'muted'}">Letzte Sicherung: ${letzte ? `${datum(letzte)}${seit ? ` (vor ${plural(seit, 'Tag', 'Tagen')})` : ' (heute)'} ${artText}` : 'noch nie'}</p>
-      <button class="btn block" id="bk-export">${mobil ? '📤 Sichern … (Teilen-Menü)' : '⬇️ Sicherung herunterladen'}</button>
+    <section class="card ${geschuetzt ? '' : 'heute'}" aria-labelledby="ds-titel">
+      <div class="daten-status">
+        <span class="ds-icon" aria-hidden="true">${geschuetzt ? '✅' : '⚠️'}</span>
+        <div class="grow">
+          <h2 data-h="3" style="margin:0" id="ds-titel">${geschuetzt ? 'Deine Daten sind geschützt' : 'Deine Daten liegen nur auf diesem Gerät'}</h2>
+          <ul class="small">
+            <li>${cloud?.anbieter ? (cloudOk ? `Abgleich mit ${cloudName}: zuletzt ${esc(new Date(cloud.zuletzt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}` : `Abgleich mit ${cloudName}: ${cloud.status === 'anmelden' ? 'bitte neu anmelden' : 'noch nicht erfolgreich'}`) : 'Kein automatischer Abgleich eingerichtet'}</li>
+            <li>Sicherungsdatei: ${letzte ? `${datum(letzte)}${seit ? ` (vor ${plural(seit, 'Tag', 'Tagen')})` : ' (heute)'}` : 'noch nie erstellt'}</li>
+          </ul>
+          ${geschuetzt ? '' : '<p class="small" style="margin-bottom:0">Wird die App gelöscht oder der Browser-Speicher geleert, sind die Daten weg. Am einfachsten: unten den automatischen Abgleich einrichten – oder eine Sicherungsdatei erstellen.</p>'}
+        </div>
+      </div>
+    </section>
+
+    ${abgleich}
+
+    <section class="card" aria-labelledby="sd-titel">
+      <h2 data-h="3" style="margin-top:0" id="sd-titel">💾 Sicherungsdatei</h2>
+      <p class="small" style="margin-top:0">Eine Datei mit <strong>allem</strong> – Bücher, Vokabeln, Profile, Lernstände, Gutscheine. Für den Notfall, zum Aufbewahren oder für den Umzug auf ein neues Gerät.</p>
+      <button class="btn block" id="bk-export">${mobil ? '📤 Sicherungsdatei erstellen (Teilen-Menü)' : '⬇️ Sicherungsdatei herunterladen'}</button>
       ${ordner ? '<button class="btn soft block" id="bk-ordner-jetzt" style="margin-top:10px">📁 In Sicherungsordner speichern</button>' : ''}
-    </div>
-
-    <div class="card">
-      <h3 style="margin-top:0">📦 Vokabeln teilen <span class="badge">ohne Profile</span></h3>
-      <p class="small">Nur die eingelesenen Vokabeln weitergeben – ohne Profile und Lernfortschritt. Ideal für Geschwister, Freunde oder ein zweites Gerät.</p>
-      <div class="btn-row"><a class="btn soft" href="#/teilen">Paket erstellen</a><a class="btn secondary" href="#/paket-laden">Paket laden</a></div>
-    </div>
-
-    <h3>Wohin speichern?</h3>
-    <div class="card" style="padding:4px 14px">
-      ${ANBIETER.map((a) => `<details class="anbieter"><summary>${a.icon} ${esc(a.name)}</summary><p class="small">${esc(a.schritte)}</p></details>`).join('')}
-    </div>
-
-    <div class="card">
-      <h3 style="margin-top:0">📁 Sicherungsordner ${S.ORDNER_MOEGLICH ? '' : '<span class="badge">nur PC/Mac</span>'}</h3>
-      ${S.ORDNER_MOEGLICH ? `
+      <label class="btn secondary block" for="bk-file" style="margin-top:10px">📂 Sicherungsdatei laden …</label>
+      <input id="bk-file" type="file" accept=".json,application/json" class="sr-only">
+      ${ordner ? '<button class="btn secondary block" id="bk-aus-ordner" style="margin-top:10px">Aus Sicherungsordner laden …</button><div id="bk-liste"></div>' : ''}
+      <div id="bk-info"></div>
+      <p class="muted small">Beim Laden gewinnt die Datei: Ihr Stand wird übernommen, Einträge, die nur auf diesem Gerät existieren, bleiben erhalten.</p>
+      <label for="bk-erinnerung">Erinnern, wenn die letzte Sicherung älter ist als</label>
+      <select id="bk-erinnerung">${[[0, 'nie erinnern'], [3, '3 Tage'], [7, '7 Tage'], [14, '14 Tage'], [30, '30 Tage']].map(([v, t]) => `<option value="${v}" ${v === erinnerung ? 'selected' : ''}>${t}</option>`).join('')}</select>
+      <p class="muted small">Ein Cloud-Abgleich zählt auch als Sicherung.</p>
+      <details class="anbieter"><summary>Datei in iCloud, OneDrive, Dropbox oder Google Drive ablegen (Anleitung)</summary>
+        ${ANBIETER.map((a) => `<p class="small"><strong>${a.icon} ${esc(a.name)}:</strong> ${esc(a.schritte)}</p>`).join('')}
+      </details>
+      ${S.ORDNER_MOEGLICH ? `<details class="anbieter" ${ordner ? 'open' : ''}><summary>📁 Sicherungsordner am Computer</summary>
         <p class="small">Wähle einmal einen Ordner – am besten deinen <strong>OneDrive-, Dropbox-, Google-Drive- oder iCloud-Ordner</strong> auf dem Computer. Die App legt dort Sicherungen ab und behält die letzten 10.</p>
         ${ordner ? `<div id="bk-status"><p class="muted small">Prüfe Sicherungsordner …</p></div>
           <label class="switch"><input type="checkbox" id="bk-auto" ${auto ? 'checked' : ''}> Automatisch sichern (1× täglich nach dem Lernen)</label>
           <div class="btn-row"><button class="btn secondary" id="bk-ordner">Anderen Ordner wählen</button><button class="btn secondary" id="bk-ordner-weg">Ordner entfernen</button></div>`
-        : '<button class="btn secondary block" id="bk-ordner">Ordner wählen …</button>'}`
-      : `<p class="small muted">Auf iPhone, iPad und Android erlaubt der Browser keinen festen Ordner. Nutze dort „Sichern …“ und wähle im Teilen-Menü „In Dateien sichern“ bzw. deinen Cloud-Dienst. Die App erinnert dich regelmäßig.</p>`}
-    </div>
+        : '<button class="btn secondary block" id="bk-ordner">Ordner wählen …</button>'}
+      </details>` : ''}
+    </section>
 
-    <div class="card">
-      <h3 style="margin-top:0">⏰ Erinnerung</h3>
-      <label for="bk-erinnerung">Erinnern, wenn die letzte Sicherung älter ist als</label>
-      <select id="bk-erinnerung">${[[0, 'nie erinnern'], [3, '3 Tage'], [7, '7 Tage'], [14, '14 Tage'], [30, '30 Tage']].map(([v, t]) => `<option value="${v}" ${v === erinnerung ? 'selected' : ''}>${t}</option>`).join('')}</select>
-    </div>
+    <section class="card" aria-labelledby="vt-titel">
+      <h2 data-h="3" style="margin-top:0" id="vt-titel">📦 Nur Vokabeln weitergeben <span class="badge">ohne Profile</span></h2>
+      <p class="small" style="margin-top:0">Als Datei (z. B. per Messenger) – ohne Profile und Lernfortschritt. Für Geschwister, Freunde oder die Klasse.</p>
+      <div class="btn-row"><a class="btn soft" href="#/teilen">Paket erstellen</a><a class="btn secondary" href="#/paket-laden">Paket laden</a></div>
+    </section>
 
-    <div class="card">
-      <h3 style="margin-top:0">📂 Sicherung laden</h3>
-      <p class="small">Lädt eine Sicherung – auch von einem anderen Gerät oder aus OneDrive, Dropbox, Google Drive oder iCloud. Vorhandene Daten bleiben erhalten, gleiche Einträge werden aktualisiert.</p>
-      <label class="btn secondary block" for="bk-file">Datei auswählen …</label>
-      <input id="bk-file" type="file" accept=".json,application/json" hidden>
-      ${ordner ? '<button class="btn secondary block" id="bk-aus-ordner" style="margin-top:10px">Aus Sicherungsordner laden …</button><div id="bk-liste"></div>' : ''}
-      <div id="bk-info"></div>
-    </div>
-
-    <div class="msg info small">Warum ist das wichtig? Die Daten liegen nur auf diesem Gerät. Wird die App gelöscht oder der Safari-Verlauf geleert, sind sie weg. Außerdem haben Safari und die Home-Bildschirm-App getrennte Speicher – mit einer Sicherung kannst du umziehen.</div>
     <details class="card"><summary>Gefahrenzone</summary>
       <p>Löscht alle Daten auf diesem Gerät.</p>
       <button class="btn danger block" id="bk-wipe">Alles löschen</button>
     </details>`;
   return {
-    title: 'Sicherung', back: 'home', html,
+    title: 'Sichern & Abgleichen', back: 'home', html,
     bind(root) {
       const fehler = (e) => { if (e?.name !== 'AbortError') toast('Hat nicht geklappt: ' + (e?.message || e)); };
+      AB.bindAbgleich(root, ctx);
 
       // ----- Status des Sicherungsordners -----
       const zeit = (t) => new Date(t).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -930,7 +953,7 @@ export async function backupView(_p, ctx) {
       $('#bk-wipe', root).onclick = async () => {
         if (!confirm('Wirklich ALLE Daten auf diesem Gerät löschen? Erstelle vorher eine Sicherung!')) return;
         if (!confirm('Letzte Nachfrage: Alles unwiderruflich löschen?')) return;
-        await db.clearStores([...db.INHALT_STORES, ...db.LERN_STORES, 'profile', 'importe', 'meta']);
+        await db.clearStores([...db.INHALT_STORES, ...db.LERN_STORES, 'profile', 'importe', 'meta', 'geloescht']);
         ctx.setzeAktivesProfil(null);
         location.hash = '#/';
         location.reload();
@@ -954,12 +977,14 @@ export async function einstellungenView(_p, ctx) {
   } catch { /* egal */ }
   const html = `
     <div class="card">
-      <h3 style="margin-top:0">🎨 Darstellung</h3>
+      <h2 data-h="3" style="margin-top:0">🎨 Darstellung</h2>
       <label>Style</label>
       <div class="style-wahl" id="st-style">${Object.entries(STYLES).map(([id, s]) => `<button class="style-karte ${(e.style || 'standard') === id ? 'on' : ''}" data-style-id="${id}">
         <img src="${s.logo}" alt=""><strong>${esc(s.name)}</strong><small>${esc(s.kurz)}</small>
         <span class="emo">${s.emoji.lernen}${s.emoji.erfolge}${s.emoji.punkt}</span></button>`).join('')}</div>
       <div class="btn-row"><button class="btn soft" id="st-feier">🎉 Feier im Style ansehen</button></div>
+      <label id="st-text-l">Textgröße</label>
+      <div class="btn-row" id="st-text" role="group" aria-labelledby="st-text-l">${TEXTGROESSEN.map(([w, t, f]) => `<button class="btn ${(e.textgroesse || 'normal') === w ? '' : 'secondary'}" data-text="${w}" aria-pressed="${(e.textgroesse || 'normal') === w}" style="font-size:${Math.round(17 * f)}px">${t}</button>`).join('')}</div>
       <label>Hell oder dunkel</label>
       <div class="btn-row" id="st-design">${DESIGNS.map(([w, t]) => `<button class="btn ${(e.design || 'auto') === w ? '' : 'secondary'}" data-design="${w}">${w === 'dunkel' ? '🌙 ' : w === 'hell' ? '☀️ ' : '📱 '}${esc(t)}</button>`).join('')}</div>
       <label class="switch" style="margin-top:14px"><input type="checkbox" id="st-anim" ${e.animationen ? 'checked' : ''}> Animationen bei Erfolgen (Konfetti, Abzeichen, Punkte)</label>
@@ -967,7 +992,7 @@ export async function einstellungenView(_p, ctx) {
       ${window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? '<p class="muted small">Hinweis: Auf diesem Gerät ist „Bewegung reduzieren“ an. Dann bleiben Animationen aus.</p>' : ''}
     </div>
     <div class="card">
-      <h3 style="margin-top:0">Abfrage</h3>
+      <h2 data-h="3" style="margin-top:0">🎯 Lernen & Abfrage</h2>
       <label for="st-richtung">Richtung</label>
       <select id="st-richtung">
         <option value="beide" ${e.abfrageRichtung === 'beide' ? 'selected' : ''}>Beide Richtungen</option>
@@ -981,7 +1006,7 @@ export async function einstellungenView(_p, ctx) {
       <select id="st-ziel">${[5, 10, 15, 20, 30].map((n) => `<option ${n === (e.tagesziel || 20) ? 'selected' : ''}>${n}</option>`).join('')}</select>
     </div>
     <div class="card">
-      <h3 style="margin-top:0">🔊 Vorlesen testen</h3>
+      <h2 data-h="3" style="margin-top:0">🔊 Vorlesen testen</h2>
       <div class="btn-row">
         <button class="btn soft" data-say="Welcome to Snowdonia! The path is very steep." data-lang="en-GB">Englisch</button>
         <button class="btn soft" data-say="Willkommen! Heute lernen wir Vokabeln." data-lang="de-DE">Deutsch</button>
@@ -991,16 +1016,16 @@ export async function einstellungenView(_p, ctx) {
       <p class="muted small">Klingt eine Stimme blechern? Auf dem iPhone unter Einstellungen › Bedienungshilfen › Gesprochene Inhalte › Stimmen bessere Stimmen laden („Erweitert“).</p>
     </div>
     <div class="card">
-      <h3 style="margin-top:0">📱 iPhone/iPad-Test</h3>
+      <h2 data-h="3" style="margin-top:0">📱 Gerätetest</h2>
       <p>Prüft Vorlesen, Mikrofon, Speicher und Teilen auf diesem Gerät und erstellt einen Bericht zum Kopieren.</p>
       <a class="btn secondary block" href="diagnose.html">Gerätetest öffnen</a>
     </div>
     <div class="card">
-      <h3 style="margin-top:0">Speicher</h3>
+      <h2 data-h="3" style="margin-top:0">Speicher</h2>
       <p class="small">${esc(speicher || 'keine Angabe')}</p>
       <button class="btn secondary block" id="st-persist">Daten vor automatischem Löschen schützen</button>
     </div>
-    <p class="muted small" style="text-align:center">Vokabel-Studio · Version ${esc(APP_VERSION)} · Alle Daten bleiben auf diesem Gerät.</p>`;
+    <p class="muted small" style="text-align:center">Vokabel-Studio · Version ${esc(APP_VERSION)}<br><a href="#/datenschutz">Datenschutz & Sicherheit</a></p>`;
   return {
     title: 'Einstellungen', back: 'home', html,
     bind(root) {
@@ -1010,13 +1035,20 @@ export async function einstellungenView(_p, ctx) {
         p.einstellungen = {
           ...(p.einstellungen || {}), abfrageRichtung: $('#st-richtung', root).value, sprechtempo: +$('#st-tempo', root).value,
           vorlesenAutomatisch: $('#st-auto', root).checked, tagesziel: +$('#st-ziel', root).value,
-          animationen: $('#st-anim', root).checked, design: design, style: stil
+          animationen: $('#st-anim', root).checked, design: design, style: stil, textgroesse: text
         };
         await db.put('profile', p);
         ctx.profil = p;
         fx.setzeAnimationen(p.einstellungen.animationen);
       };
       let design = e.design || 'auto';
+      let text = e.textgroesse || 'normal';
+      $$('#st-text [data-text]', root).forEach((b) => b.onclick = async () => {
+        text = b.dataset.text;
+        setzeTextgroesse(text);
+        $$('#st-text [data-text]', root).forEach((x) => { x.classList.toggle('secondary', x !== b); x.setAttribute('aria-pressed', String(x === b)); });
+        await speichern();
+      });
       let stil = e.style || 'standard';
       $$('#st-style [data-style-id]', root).forEach((b) => b.onclick = async () => {
         stil = b.dataset.styleId;

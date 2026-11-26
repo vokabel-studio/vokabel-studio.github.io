@@ -85,6 +85,7 @@ export async function erstelle(profilIds, { text, emoji, art, anzahl, minProzent
 export async function loesche(profilId, gutscheinId) {
   const { b } = await daten(profilId);
   b.gutscheine = b.gutscheine.filter((g) => g.id !== gutscheinId);
+  b.gutscheineWeg = [...new Set([...(b.gutscheineWeg || []), gutscheinId])];   // damit ein Abgleich ihn nicht zurückholt
   await db.put('belohnungen', b);
 }
 

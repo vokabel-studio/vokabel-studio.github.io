@@ -122,7 +122,10 @@ export async function erinnerungFaellig() {
   if (!tage) return null;
   const voks = await db.all('vokabeln');
   if (!voks.length) return null;
-  const letzte = await letzteSicherung();
+  // Ein Cloud-Abgleich zählt auch als Sicherung (die Daten liegen dann zusätzlich in OneDrive & Co.)
+  const cloud = await db.getMeta('cloud');
+  const zeiten = [await letzteSicherung(), cloud?.anbieter && cloud.status !== 'fehler' ? cloud.zuletzt : null].filter(Boolean);
+  const letzte = zeiten.sort().pop();
   const seit = letzte ? Math.floor((Date.now() - new Date(letzte).getTime()) / 86400000) : null;
   if (seit === null || seit >= tage) return { seit };
   return null;

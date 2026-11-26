@@ -12,3 +12,11 @@ export function setzeDesign(d = 'auto') {
   const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg || '#2f5bd3');
 }
+
+// Textgröße (Barrierefreiheit): vergrößert die ganze App wie das Zoomen im Browser. Je Profil, lokal gemerkt.
+export const TEXTGROESSEN = [['normal', 'Normal', 1], ['gross', 'Groß', 1.15], ['sehrgross', 'Sehr groß', 1.3]];
+export function setzeTextgroesse(t = 'normal') {
+  const f = (TEXTGROESSEN.find(([id]) => id === t) || TEXTGROESSEN[0])[2];
+  document.documentElement.style.zoom = f === 1 ? '' : String(f);
+  try { localStorage.setItem(LS_PREFIX + 'text', t); } catch { /* privat */ }
+}

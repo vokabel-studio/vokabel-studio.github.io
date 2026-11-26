@@ -51,7 +51,7 @@ export async function lernenView({ query }, ctx) {
       <button class="btn block" id="h-faellig" style="min-height:72px;font-size:20px">🔁 Fällige wiederholen</button>
       <p class="muted small" id="h-info" style="margin-bottom:0"></p>
     </div>
-    <h3>Welche Units?</h3>
+    <h2 data-h="3">Welche Units?</h2>
     ${[...gruppen].map(([lwId, us]) => `
       <div class="card" style="padding:6px 14px">
         <div class="muted small" style="margin:6px 0">${esc(lehrwerkName(lw.get(lwId)))}</div>
@@ -67,7 +67,7 @@ export async function lernenView({ query }, ctx) {
       <div><label for="h-anzahl">Wie viele?</label><select id="h-anzahl">
         ${[10, 20, 30, 0].map((n) => `<option value="${n}" ${H.anzahl === n ? 'selected' : ''}>${n || 'alle'}</option>`).join('')}</select></div>
     </div>
-    <h3>Wie willst du üben?</h3>
+    <h2 data-h="3">Wie willst du üben?</h2>
     <div class="grid">
       ${modusKachel('karten', '🃏', 'Lernkarten', 'umdrehen & selbst bewerten')}
       ${modusKachel('abfrage', '⌨️', 'Abfrage', 'tippen oder sprechen')}
@@ -624,6 +624,7 @@ async function endeView(ctx) {
     if (gutscheine.length) setTimeout(() => G.feiere(gutscheine), 1200);
     if (S.cfg.terminRef) await markiereTerminAufgabe(S.cfg.terminRef);
     import('./sicherung.js').then((m) => m.autoSicherung()).then((r) => { if (r?.ok) toast('💾 Automatisch gesichert'); }).catch(() => {});
+    import('./cloud.js').then((m) => m.autoAbgleich()).catch(() => {});
     S.ende = { richtig, gesamt: gewertet.length, prozent, schwach, gutscheine, gsHtml: gutscheine.map((f) => G.gutscheinHtml(f)).join('') };
     merkeSitzung();   // Übung fertig → nicht mehr zum Fortsetzen anbieten
     // Erfolgs-Animationen (nur wenn eingeschaltet)
@@ -641,10 +642,10 @@ async function endeView(ctx) {
         : `<h2>Geschafft!</h2><p>${E.richtig} von ${E.gesamt} richtig${E.gesamt ? ` (${E.prozent} %)` : ''}</p>`}
       <p><strong>${emo('punkt')} ${S.punkte} Punkte</strong> gesammelt${S.maxSerie >= 3 ? ` · ${emo('serie')} beste Serie: ${S.maxSerie}` : ''}</p>
     </div>
-    ${E.gutscheine?.length ? `<div class="card"><h3 style="margin-top:0">🎟️ ${E.gutscheine.length === 1 ? 'Neuer Gutschein' : 'Neue Gutscheine'}!</h3>${E.gsHtml}
+    ${E.gutscheine?.length ? `<div class="card"><h2 data-h="3" style="margin-top:0">🎟️ ${E.gutscheine.length === 1 ? 'Neuer Gutschein' : 'Neue Gutscheine'}!</h2>${E.gsHtml}
       <p class="small muted">Zeig ihn deinen Eltern. Du findest ihn unter <a href="#/erfolge">Erfolge</a>.</p></div>` : ''}
-    ${S.neueAbzeichen.length ? `<div class="card"><h3 style="margin-top:0">Neue Abzeichen</h3>${S.neueAbzeichen.map((a) => `<p>${a.icon} <strong>${esc(a.name)}</strong> – ${esc(a.text)}</p>`).join('')}</div>` : ''}
-    ${E.schwach.length ? `<div class="card"><h3 style="margin-top:0">Schwache Vokabeln (${E.schwach.length})</h3><ul class="list">
+    ${S.neueAbzeichen.length ? `<div class="card"><h2 data-h="3" style="margin-top:0">Neue Abzeichen</h2>${S.neueAbzeichen.map((a) => `<p>${a.icon} <strong>${esc(a.name)}</strong> – ${esc(a.text)}</p>`).join('')}</div>` : ''}
+    ${E.schwach.length ? `<div class="card"><h2 data-h="3" style="margin-top:0">Schwache Vokabeln (${E.schwach.length})</h2><ul class="list">
       ${E.schwach.map((v) => `<li class="list-item"><span class="grow"><span class="vok-wort">${esc(v.wort)}</span><br><span class="vok-de">${esc(v.bedeutungen.join('; '))}</span></span></li>`).join('')}</ul>
       <button class="btn block" id="e-schwach">💪 Schwache Vokabeln trainieren</button></div>` : ''}
     <div class="btn-row">

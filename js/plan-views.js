@@ -58,7 +58,7 @@ export async function planView(_p, ctx) {
       <p class="small muted">${z.neuHeute ? `+ ${plural(z.neuHeute, 'neue Vokabel', 'neue Vokabeln')} für heute` : z.neu ? 'Tagesziel für neue Vokabeln erreicht ✓' : ''}</p>
       <button class="btn block" id="p-faellig" ${z.paare ? '' : 'disabled'}>🔁 Jetzt wiederholen</button>
     </div>
-    <h3>Vokabeltests</h3>
+    <h2 data-h="3">Vokabeltests</h2>
     ${kommend.length ? kommend.map((t) => terminZeile(t)).join('') : '<div class="card muted">Noch kein Termin eingetragen.</div>'}
     <a class="btn block" href="#/termin-neu">➕ Termin für Vokabeltest eintragen</a>
     ${vergangen.length ? `<details class="card"><summary>Vergangene Termine (${vergangen.length})</summary>${vergangen.reverse().map((t) => terminZeile(t)).join('')}</details>` : ''}
@@ -235,7 +235,7 @@ export async function erfolgeView(_p, ctx) {
   const aktive = gb.gutscheine.filter((g) => !g.erledigt);
   const eingeloest = gb.freigeschaltet.filter((f) => f.eingeloestAm).sort((x, y) => y.eingeloestAm.localeCompare(x.eingeloestAm));
   const gsHtml = offen.length || aktive.length || eingeloest.length ? `
-    <h3>🎟️ Meine Gutscheine</h3>
+    <h2 data-h="3">🎟️ Meine Gutscheine</h2>
     ${offen.map((f) => `<div data-gs="${esc(f.id)}">${G.gutscheinHtml(f, `<div class="small muted">freigeschaltet am ${datum(f.am)}</div><button class="btn gs-knopf" data-einloesen="${esc(f.id)}">Einlösen</button>`)}</div>`).join('')}
     ${aktive.length ? `<div class="card" style="padding:4px 14px">${aktive.map((g) => G.fortschrittHtml(g, gb, tests)).join('')}</div>` : ''}
     ${eingeloest.length ? `<details class="card"><summary>Schon eingelöst (${eingeloest.length})</summary><ul class="small">
@@ -248,7 +248,7 @@ export async function erfolgeView(_p, ctx) {
       <div class="card stat"><div class="big">🏅</div><div class="zahl">${b.abzeichen.length}/${ABZEICHEN.length}</div><div class="muted small">Abzeichen</div></div>
     </div>
     ${gsHtml}
-    <h3>Abzeichen</h3>
+    <h2 data-h="3">Abzeichen</h2>
     <div class="abzeichen">${ABZEICHEN.map((a) => `<div class="card ${hat.has(a.id) ? '' : 'gesperrt'}">
       <div class="big">${a.icon}</div><strong>${esc(a.name)}</strong><div class="small muted">${esc(a.text)}</div>
       ${hat.has(a.id) ? `<div class="small" style="color:var(--ok)">✓ ${datum(hat.get(a.id).erhaltenAm)}</div>` : ''}</div>`).join('')}</div>`;
@@ -306,12 +306,14 @@ export async function elternView(_p, ctx) {
         <p>Eltern-Bereich. Bitte PIN eingeben.</p>
         <input id="el-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" style="text-align:center;font-size:28px;letter-spacing:8px">
         <button class="btn block" id="el-ok" style="margin-top:12px">Öffnen</button>
-        <p class="muted small">PIN vergessen? Unter Sicherung › Gefahrenzone alles löschen und neu einrichten – oder Sicherung laden.</p></div>`
-      : `<div class="card"><h3 style="margin-top:0">Eltern-PIN festlegen</h3>
+        <p class="muted small">PIN vergessen? Unter Sichern & Abgleichen › Gefahrenzone alles löschen und neu einrichten – oder eine Sicherungsdatei laden.</p></div>
+      <p class="small" style="text-align:center"><a href="#/datenschutz">🔒 Datenschutz & Sicherheit</a></p>`
+      : `<div class="card"><h2 data-h="3" style="margin-top:0">Eltern-PIN festlegen</h2>
         <p>Mit der PIN schützt du die Eltern-Ansicht. Kinder sehen sie dann nicht ohne dich.</p>
         <input id="el-neu" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="4–8 Ziffern">
         <input id="el-neu2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="PIN wiederholen" style="margin-top:8px">
-        <button class="btn block" id="el-set" style="margin-top:12px">PIN speichern</button></div>`;
+        <button class="btn block" id="el-set" style="margin-top:12px">PIN speichern</button></div>
+      <div class="msg info small">Bevor Sie Profile, KI-Anbindung oder Cloud-Abgleich einrichten: <a href="#/datenschutz">Was passiert mit den Daten? – Datenschutz & Sicherheit lesen ›</a></div>`;
     return {
       title: 'Eltern', back: 'home', html,
       bind(root) {
@@ -360,17 +362,17 @@ export async function elternView(_p, ctx) {
     const kommend = termine.filter((t) => t.datum >= L.heute()).sort((a, c) => a.datum.localeCompare(c.datum));
     tests.sort((a, c) => c.zeitpunkt.localeCompare(a.zeitpunkt));
     return `<div class="card">
-      <h3 style="margin-top:0">${avatarHtml(p.avatar, 22)} ${esc(p.name)}</h3>
+      <h2 data-h="3" style="margin-top:0">${avatarHtml(p.avatar, 22)} ${esc(p.name)}</h2>
       <p class="small">Zuletzt aktiv: <strong>${letzte ? datum(letzte) : 'noch nie'}</strong> · Serie: <strong>${plural(b.serie.aktuell, 'Tag', 'Tage')}</strong> (Rekord ${b.serie.rekord}) · ⭐ ${b.punkte}</p>
-      <h4 class="muted small">ANTWORTEN DER LETZTEN 7 TAGE</h4>
+      <h3 data-h="4" class="muted small">ANTWORTEN DER LETZTEN 7 TAGE</h3>
       <div class="woche">${tage.map((t) => `<div><span style="height:${Math.round(proTag.get(t) / max * 56) + 2}px"></span><small>${new Date(t + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short' })}</small><b>${proTag.get(t)}</b></div>`).join('')}</div>
       <p class="small">Trefferquote insgesamt: <strong>${quote} %</strong> bei ${anzahl} Antworten</p>
-      <h4 class="muted small">LERNSTAND (${stat.gesamt} VOKABELN)</h4>
+      <h3 data-h="4" class="muted small">LERNSTAND (${stat.gesamt} VOKABELN)</h3>
       <div class="kasten">${stat.zaehl.map((n, i) => `<div><span style="height:${stat.gesamt ? Math.max(4, n / stat.gesamt * 60) : 4}px"></span><small>${i ? 'K' + i : 'neu'}</small><b>${n}</b></div>`).join('')}</div>
       <p class="small muted">${stat.sicher} sicher (Kasten 4–5), ${stat.zaehl[0]} noch nie geübt</p>
-      ${tests.length ? `<h4 class="muted small">TESTS</h4><ul class="small">${tests.slice(0, 5).map((t) => `<li>${datum(t.zeitpunkt)}: <strong>${t.prozent} %</strong> (${esc(t.einschaetzung)})</li>`).join('')}</ul>` : ''}
-      ${kommend.length ? `<h4 class="muted small">ANSTEHEND</h4><ul class="small">${kommend.map((t) => `<li>${esc(t.titel)} am ${esc(L.datumLang(t.datum))}</li>`).join('')}</ul>` : ''}
-      ${schwer.length ? `<h4 class="muted small">SCHWIERIGSTE WÖRTER</h4><ul class="small">${schwer.map((s) => `<li>${esc(s.v.wort)} – ${esc(s.v.bedeutungen[0])} (${s.n}× falsch)</li>`).join('')}</ul>` : ''}
+      ${tests.length ? `<h3 data-h="4" class="muted small">TESTS</h3><ul class="small">${tests.slice(0, 5).map((t) => `<li>${datum(t.zeitpunkt)}: <strong>${t.prozent} %</strong> (${esc(t.einschaetzung)})</li>`).join('')}</ul>` : ''}
+      ${kommend.length ? `<h3 data-h="4" class="muted small">ANSTEHEND</h3><ul class="small">${kommend.map((t) => `<li>${esc(t.titel)} am ${esc(L.datumLang(t.datum))}</li>`).join('')}</ul>` : ''}
+      ${schwer.length ? `<h3 data-h="4" class="muted small">SCHWIERIGSTE WÖRTER</h3><ul class="small">${schwer.map((s) => `<li>${esc(s.v.wort)} – ${esc(s.v.bedeutungen[0])} (${s.n}× falsch)</li>`).join('')}</ul>` : ''}
     </div>`;
   }));
   const G = await import('./gutscheine.js');
@@ -379,12 +381,12 @@ export async function elternView(_p, ctx) {
     const offen = b.freigeschaltet.filter((f) => !f.eingeloestAm);
     const aktive = b.gutscheine.filter((g) => !g.erledigt);
     if (!offen.length && !aktive.length) return '';
-    return `<h4 style="margin:14px 0 6px">${avatarHtml(p.avatar, 20)} ${esc(p.name)}</h4>
+    return `<h3 data-h="4" style="margin:14px 0 6px">${avatarHtml(p.avatar, 20)} ${esc(p.name)}</h3>
       ${offen.map((f) => G.gutscheinHtml(f, `<div class="small muted">freigeschaltet am ${datum(f.am)}</div><button class="btn ok gs-knopf" data-gs-ein="${esc(p.id)}|${esc(f.id)}">✓ Als eingelöst markieren</button>`)).join('')}
       ${aktive.map((g) => `<div class="gs-mit-weg">${G.fortschrittHtml(g, b, tests)}<button class="btn danger klein-weg" data-gs-weg="${esc(p.id)}|${esc(g.id)}" aria-label="Gutschein löschen">🗑️</button></div>`).join('')}`;
   }).join('');
   const gsKarte = `<div class="card" id="gs-karte">
-      <h3 style="margin-top:0">🎟️ Gutscheine</h3>
+      <h2 data-h="3" style="margin-top:0">🎟️ Gutscheine</h2>
       <p class="small">Eigene Belohnungen mit eigenem Text, z. B. „Cheeseburger bei McDonald's“ oder „15 Minuten extra Gaming“. Dein Kind schaltet sie durch Lernen frei, sieht den Fortschritt unter „Erfolge“ und bekommt am Ende der Übung eine große Einblendung. Einlösen geht nur mit deiner PIN.</p>
       ${gsListe || '<p class="muted small">Noch keine Gutscheine angelegt.</p>'}
       <div id="gs-form"></div>
@@ -410,7 +412,7 @@ export async function elternView(_p, ctx) {
   const html = `${karten.join('') || '<div class="card muted">Noch keine Profile.</div>'}
     ${profile.length ? gsKarte : ''}
     <div class="card" id="ki-karte">
-      <h3 style="margin-top:0">🤖 KI-Anbindung <span class="badge">optional</span></h3>
+      <h2 data-h="3" style="margin-top:0">🤖 KI-Anbindung <span class="badge">optional</span></h2>
       <p class="small">Mit eigenem, kostenlosem Zugangsschlüssel wertet die App Fotos der Vokabelseite <strong>selbst</strong> aus und prüft eigene Sätze. Schlüssel bleiben nur auf diesem Gerät und kommen <strong>nicht</strong> in die Sicherungsdatei.</p>
       <p class="small"><strong>Tipp:</strong> Zwei oder drei Anbieter einrichten (z. B. Gemini, Groq und OpenRouter – alle kostenlos). Ist einer überlastet, nimmt die App automatisch den nächsten.</p>
       ${reihe.length ? `<div class="msg ok small">Reihenfolge: ${reihe.map((a) => esc(K.ANBIETER[a].name)).join(' → ')}</div>` : ''}
@@ -419,6 +421,8 @@ export async function elternView(_p, ctx) {
       ${reihe.length ? '<div class="btn-row"><button class="btn secondary" id="ki-test">Verbindung testen</button></div><div id="ki-test-erg"></div>' : ''}
       <p class="small muted">Gratis-Angebote ändern sich häufig. Der Weg über Kopieren und Einfügen bleibt immer möglich.</p>
     </div>
+    <a class="card list-item" href="#/datenschutz" style="margin:12px 0"><span class="mehr-icon" aria-hidden="true">🔒</span><span class="grow"><span class="vok-wort">Datenschutz & Sicherheit</span><br>
+      <span class="vok-de">Was die App speichert und wohin Daten gehen</span></span><span class="chev" aria-hidden="true">›</span></a>
     <div class="btn-row"><button class="btn secondary" id="el-zu">🔒 Schließen</button><button class="btn secondary" id="el-pinneu">PIN ändern</button></div>`;
   return {
     title: 'Eltern-Ansicht', back: 'home', html,
@@ -486,7 +490,7 @@ export async function elternView(_p, ctx) {
         const anbieter = b.dataset.bearb, a = K.ANBIETER[anbieter], konto = ki.konten[anbieter] || {};
         const box = $('#ki-bearb', root);
         box.innerHTML = `<div class="card" style="border:2px solid var(--primary)">
-          <h4 style="margin:0 0 6px">${esc(a.name)} einrichten</h4>
+          <h3 data-h="4" style="margin:0 0 6px">${esc(a.name)} einrichten</h3>
           <p class="small muted">${esc(a.daten)}</p>
           <p class="small"><a href="${a.schluesselUrl}" target="_blank" rel="noopener">→ Hier kostenlos einen Schlüssel erzeugen</a> (Konto für Erwachsene)</p>
           <label for="ki-key">Zugangsschlüssel (API-Key)</label>

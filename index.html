@@ -2,6 +2,10 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
+  <!-- Sicherheitsregel: Die App darf nur Dateien von hier laden und nur mit diesen Diensten sprechen
+       (KI-Anbieter, Microsoft-Anmeldung und OneDrive). Alles andere blockiert der Browser. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' blob:; connect-src 'self' https://generativelanguage.googleapis.com https://api.mistral.ai https://api.groq.com https://openrouter.ai https://login.microsoftonline.com https://graph.microsoft.com https://*.1drv.com https://*.livefilestore.com https://*.storage.live.com https://onedrive.live.com https://*.onedrive.com https://*.sharepoint.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Vokabel-Studio</title>
   <meta name="description" content="Vokabeln aus dem Schulbuch lernen – Englisch und Latein">
@@ -14,16 +18,7 @@
   <link rel="icon" href="icons/logo-96.png" type="image/png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="css/app.css">
-  <script>
-    // Gemerktes Design sofort setzen, damit beim Start nichts hell aufblitzt
-    try {
-      var d = localStorage.getItem((/beta/i.test(location.pathname) ? 'vsb-' : 'vs-') + 'design');
-      if (d === 'dunkel') document.documentElement.dataset.theme = 'dark';
-      else if (d === 'hell') document.documentElement.dataset.theme = 'light';
-      var st = localStorage.getItem((/beta/i.test(location.pathname) ? 'vsb-' : 'vs-') + 'style');
-      if (st && st !== 'standard') document.documentElement.dataset.style = st;
-    } catch (e) { /* privat */ }
-  </script>
+  <script src="js/frueh.js"></script>
 </head>
 <body>
   <header class="topbar">
