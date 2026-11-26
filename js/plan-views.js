@@ -323,7 +323,7 @@ export async function elternView(_p, ctx) {
           };
           ok.onclick = tryOpen;
           $('#el-pin', root).onkeydown = (e) => { if (e.key === 'Enter') tryOpen(); };
-          setTimeout(() => $('#el-pin', root).focus(), 50);
+          setTimeout(() => $('#el-pin', root)?.focus(), 50);
         } else {
           $('#el-set', root).onclick = async () => {
             const a = $('#el-neu', root).value, b = $('#el-neu2', root).value;

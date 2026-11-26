@@ -46,6 +46,19 @@ Reines HTML/CSS/JavaScript (ES-Module), kein Build-Schritt. Speicherung in Index
 
 Lokal starten: `python -m http.server 8765` und http://localhost:8765 öffnen.
 
+## Entwicklung, Tests und Freigabe
+
+Entwickelt wird im Repo `vokabel-studio/beta` (Testversion unter `/beta/`). Die Live-App `vokabel-studio/vokabel-studio.github.io` wird nur über den Freigabe-Knopf aktualisiert.
+
+1. **Tests:** Bei jeder Änderung laufen automatisch die Tests in `tests/` (GitHub › Actions › „Tests“), je einmal als Android-Handy (Chromium) und als iPhone (WebKit). Lokal: `npm install`, dann `npm test`.
+   Geprüft werden u. a. Lernarten, Einlesen (mit nachgebauter KI), Bearbeiten/Löschen, Gutscheine, Sicherung – auch das Laden einer Sicherung aus Version 2.7 (`tests/fixtures/`) – sowie Versionsnummern und Offline-Dateiliste.
+2. **Von Hand auf echten Geräten:** Mikrofon, Kamera, Teilen-Menü, Vorlese-Stimmen, Ton im Auto.
+3. **Live freigeben:** Actions › „Live freigeben“ › *Run workflow*. Läuft die Tests, prüft, dass die Versionsnummer erhöht wurde, kopiert die App-Dateien (ohne Tests, siehe `.github/live-ausschluss.txt`) in die Live-App und testet sie danach online.
+4. **Notbremse:** Actions › „Live zurücksetzen“ macht die letzte Freigabe rückgängig.
+
+Bei jeder Änderung an App-Dateien die Versionsnummer in `sw.js` **und** `js/config.js` erhöhen (der Test prüft, dass beide gleich sind).
+Einmalig nötig für die Freigabe: Secret `LIVE_TOKEN` im Beta-Repo (Fine-grained Token mit „Contents: Read and write“ nur für `vokabel-studio/vokabel-studio.github.io`).
+
 ## Urheberrecht
 
 Dieses Repository enthält **keine** Inhalte aus Schulbüchern. Abgeschriebene Vokabellisten bleiben nur lokal auf dem Gerät der Nutzer.

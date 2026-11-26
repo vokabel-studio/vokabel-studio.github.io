@@ -67,7 +67,12 @@ export function go(path) { location.hash = '#/' + path; }
 
 const ctx = { go, profil: null, rerender: () => render(), setzeAktivesProfil };
 
+// Jeder Seitenaufbau bekommt eine Nummer. Wird beim schnellen Wechseln eine ältere Seite erst später fertig,
+// darf sie die neuere nicht mehr überschreiben.
+let renderNr = 0;
+
 async function render() {
+  const nr = ++renderNr;
   const roh = location.hash.replace(/^#\/?/, '');
   const [path, qs] = roh.split('?');
   const query = Object.fromEntries(new URLSearchParams(qs || ''));
@@ -84,6 +89,7 @@ async function render() {
   try {
     const r = await treffer.view({ ...treffer.params, query }, ctx);
     if (!r) return;   // View hat umgeleitet
+    if (nr !== renderNr) return;   // inzwischen wurde eine andere Seite aufgerufen
     document.getElementById('title').textContent = r.title || 'Vokabel-Studio';
     if (r.logo) document.getElementById('title').insertAdjacentHTML('afterbegin', `<img src="${style().logo}" class="titel-logo" alt="">`);
     document.title = r.title && r.title !== 'Vokabel-Studio' ? `${r.title} – Vokabel-Studio` : 'Vokabel-Studio';

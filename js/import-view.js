@@ -172,7 +172,7 @@ async function promptSchritt(ctx) {
       $('#w-weiter', root).onclick = () => weiter(ctx, 'einfuegen');
       if (!kiAn) return;
       const status = $('#w-ki-status', root);
-      // auftraege: Fotos (File) oder ein per Texterkennung kopierter Text ({ text })
+      // auftraege: Fotos (File) oder ein per Texterkennung kopierter Text ({ kopierterText })
       const auswerten = async (auftraege) => {
         if (!auftraege.length) return;
         const roh = [], daten = [];
@@ -181,15 +181,15 @@ async function promptSchritt(ctx) {
         try {
           for (let i = 0; i < auftraege.length; i++) {
             const a = auftraege[i];
-            const was = a.text ? 'Der Text' : auftraege.length > 1 ? `Foto ${i + 1} von ${auftraege.length}` : 'Das Foto';
+            const was = a.kopierterText ? 'Der Text' : auftraege.length > 1 ? `Foto ${i + 1} von ${auftraege.length}` : 'Das Foto';
             status.innerHTML = `<div class="msg info"><span class="spinner"></span> ${was} wird ausgewertet … (dauert meist 10–40 Sekunden)</div>`;
             const onStatus = (m) => { status.innerHTML = `<div class="msg info"><span class="spinner"></span> ${was}: ${esc(m)}</div>`; };
-            const antwort = a.text
-              ? await K.frage(text + TEXT_STATT_FOTO + a.text, { json: true, onStatus, timeoutMs: 90000 })
+            const antwort = a.kopierterText
+              ? await K.frage(text + TEXT_STATT_FOTO + a.kopierterText, { json: true, onStatus, timeoutMs: 90000 })
               : await K.frage(text, { bilder: [await K.bildVorbereiten(a)], json: true, onStatus });
             roh.push(antwort);
             const p1 = parseAntwort(antwort);
-            if (p1.fehler.length) throw new Error(`${a.text ? 'Text' : `Foto ${i + 1}`}: ${p1.fehler[0]}`);
+            if (p1.fehler.length) throw new Error(`${a.kopierterText ? 'Text' : `Foto ${i + 1}`}: ${p1.fehler[0]}`);
             daten.push(p1);
           }
         } catch (e) {
@@ -214,7 +214,7 @@ async function promptSchritt(ctx) {
       $('#w-lens-ok', root).onclick = () => {
         const t = lens.value.trim();
         if (t.length < 20) { toast('Bitte zuerst den kopierten Text der Vokabelseite einfügen.'); lens.focus(); return; }
-        auswerten([{ text: t }]);
+        auswerten([{ kopierterText: t }]);   // eigener Name: Fotos (File) haben selbst eine Methode .text()
       };
     }
   };

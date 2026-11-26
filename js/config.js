@@ -4,7 +4,7 @@ export const BETA = /beta/i.test(location.pathname);
 export const DB_NAME = BETA ? 'vokabel-studio-beta' : 'vokabel-studio';
 export const LS_PREFIX = BETA ? 'vsb-' : 'vs-';
 // Gleiche Nummer wie VERSION in sw.js – bei jeder Änderung beide erhöhen.
-export const APP_VERSION = BETA ? '2.10.0-beta' : '2.10.0';
+export const APP_VERSION = BETA ? '2.10.2-beta' : '2.10.2';
 
 // Umzug (23.11.2026): neue Adresse in der GitHub-Organisation „vokabel-studio“.
 // Die alte Adresse bleibt vorerst erreichbar und zeigt einen Umzugshinweis, damit man dort noch eine Sicherung machen kann.

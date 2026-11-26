@@ -2,7 +2,7 @@
 // Bei jeder Änderung an App-Dateien VERSION erhöhen (und APP_VERSION in js/config.js gleich setzen).
 // Cache-Name enthält den Pfad, damit Live- und Beta-Version sich nicht gegenseitig löschen
 const PREFIX = 'vs-' + new URL(self.registration.scope).pathname + '-';
-const VERSION = PREFIX + '2.10.0';
+const VERSION = PREFIX + '2.10.2';
 const NETZ_WARTEN = 3000;   // so lange aufs Netz warten, danach (falls vorhanden) die gespeicherte Datei nehmen
 const DATEIEN = [
   './', 'index.html', 'diagnose.html', 'manifest.webmanifest',
