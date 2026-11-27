@@ -31,6 +31,12 @@ export async function hole(profilId) {
   return b;
 }
 
+/** Serie, wie sie heute gilt: wer gestern und heute nicht gelernt hat, steht wieder bei 0 */
+export function serieJetzt(b) {
+  const l = b.serie?.letzterLerntag;
+  return l === isoHeute() || l === isoGestern() ? (b.serie.aktuell || 0) : 0;
+}
+
 function serieAktualisieren(b) {
   const h = isoHeute();
   const letzter = b.serie.letzterLerntag;

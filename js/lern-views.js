@@ -643,7 +643,7 @@ async function endeView(ctx) {
       <p><strong>${emo('punkt')} ${S.punkte} Punkte</strong> gesammelt${S.maxSerie >= 3 ? ` · ${emo('serie')} beste Serie: ${S.maxSerie}` : ''}</p>
     </div>
     ${E.gutscheine?.length ? `<div class="card"><h2 data-h="3" style="margin-top:0">🎟️ ${E.gutscheine.length === 1 ? 'Neuer Gutschein' : 'Neue Gutscheine'}!</h2>${E.gsHtml}
-      <p class="small muted">Zeig ihn deinen Eltern. Du findest ihn unter <a href="#/erfolge">Erfolge</a>.</p></div>` : ''}
+      <p class="small muted">Zeig ihn deinen Eltern. Du findest ihn unter <a href="#/gutscheine">Meine Gutscheine</a>.</p></div>` : ''}
     ${S.neueAbzeichen.length ? `<div class="card"><h2 data-h="3" style="margin-top:0">Neue Abzeichen</h2>${S.neueAbzeichen.map((a) => `<p>${a.icon} <strong>${esc(a.name)}</strong> – ${esc(a.text)}</p>`).join('')}</div>` : ''}
     ${E.schwach.length ? `<div class="card"><h2 data-h="3" style="margin-top:0">Schwache Vokabeln (${E.schwach.length})</h2><ul class="list">
       ${E.schwach.map((v) => `<li class="list-item"><span class="grow"><span class="vok-wort">${esc(v.wort)}</span><br><span class="vok-de">${esc(v.bedeutungen.join('; '))}</span></span></li>`).join('')}</ul>

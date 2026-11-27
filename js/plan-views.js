@@ -4,7 +4,7 @@ import { lehrwerkName, unitWort } from './faecher.js';
 import { esc, $, $$, toast, uid, plural, datum } from './util.js';
 import * as L from './lernen.js';
 import { starteSitzung, unitKontext } from './lern-views.js';
-import { ABZEICHEN, hole as holeBelohnung } from './belohnung.js';
+import { ABZEICHEN, hole as holeBelohnung, serieJetzt } from './belohnung.js';
 import { avatarHtml } from './avatare.js';
 import { E } from './styles.js';
 
@@ -229,21 +229,15 @@ export async function erfolgeView(_p, ctx) {
   const b = await holeBelohnung(ctx.profil.id);
   const stat = await L.kastenStatistik(ctx.profil.id, await L.profilUnitIds(ctx.profil));
   const hat = new Map(b.abzeichen.map((a) => [a.id, a]));
-  const G = await import('./gutscheine.js');
-  const { b: gb, tests } = await G.daten(ctx.profil.id);
-  const offen = gb.freigeschaltet.filter((f) => !f.eingeloestAm).sort((x, y) => y.am.localeCompare(x.am));
-  const aktive = gb.gutscheine.filter((g) => !g.erledigt);
-  const eingeloest = gb.freigeschaltet.filter((f) => f.eingeloestAm).sort((x, y) => y.eingeloestAm.localeCompare(x.eingeloestAm));
-  const gsHtml = offen.length || aktive.length || eingeloest.length ? `
-    <h2 data-h="3">🎟️ Meine Gutscheine</h2>
-    ${offen.map((f) => `<div data-gs="${esc(f.id)}">${G.gutscheinHtml(f, `<div class="small muted">freigeschaltet am ${datum(f.am)}</div><button class="btn gs-knopf" data-einloesen="${esc(f.id)}">Einlösen</button>`)}</div>`).join('')}
-    ${aktive.length ? `<div class="card" style="padding:4px 14px">${aktive.map((g) => G.fortschrittHtml(g, gb, tests)).join('')}</div>` : ''}
-    ${eingeloest.length ? `<details class="card"><summary>Schon eingelöst (${eingeloest.length})</summary><ul class="small">
-      ${eingeloest.map((f) => `<li>${esc(f.emoji)} ${esc(f.text)} – eingelöst am ${datum(f.eingeloestAm)}</li>`).join('')}</ul></details>` : ''}` : '';
+  const GV = await import('./gutschein-views.js');
+  const gz = await GV.gutscheinZahlen(ctx.profil.id);
+  const gsHtml = gz.gesamt ? `<a class="card list-item" href="#/gutscheine" style="margin:12px 0">
+      <span class="mehr-icon" aria-hidden="true">🎟️</span><span class="grow"><span class="vok-wort">Meine Gutscheine</span><br>
+      <span class="vok-de">${GV.gutscheinLinkText(gz)}</span></span>${gz.bereit ? `<span class="badge ok">${gz.bereit}</span>` : ''}<span class="chev" aria-hidden="true">›</span></a>` : '';
   const html = `
     <div class="grid">
       <div class="card stat"><div class="big">${E('punkt')}</div><div class="zahl">${b.punkte}</div><div class="muted small">Punkte</div></div>
-      <div class="card stat"><div class="big">🔥</div><div class="zahl">${b.serie.aktuell}</div><div class="muted small">Tage am Stück (Rekord ${b.serie.rekord})</div></div>
+      <div class="card stat"><div class="big">🔥</div><div class="zahl">${serieJetzt(b)}</div><div class="muted small">Tage am Stück (Rekord ${b.serie.rekord})</div></div>
       <div class="card stat"><div class="big">🧠</div><div class="zahl">${stat.sicher}</div><div class="muted small">Vokabeln sicher</div></div>
       <div class="card stat"><div class="big">🏅</div><div class="zahl">${b.abzeichen.length}/${ABZEICHEN.length}</div><div class="muted small">Abzeichen</div></div>
     </div>
@@ -254,31 +248,6 @@ export async function erfolgeView(_p, ctx) {
       ${hat.has(a.id) ? `<div class="small" style="color:var(--ok)">✓ ${datum(hat.get(a.id).erhaltenAm)}</div>` : ''}</div>`).join('')}</div>`;
   return {
     title: 'Meine Erfolge', back: 'home', html,
-    bind(root) {
-      // Einlösen nur mit Eltern-PIN (falls festgelegt)
-      $$('[data-einloesen]', root).forEach((btn) => btn.onclick = async () => {
-        const fid = btn.dataset.einloesen;
-        const loesen = async () => { await G.einloesen(ctx.profil.id, fid); toast('Eingelöst ✓ Viel Spaß!'); ctx.rerender(); };
-        if (!(await db.getMeta('elternPin'))) {
-          if (confirm('Gutschein als eingelöst markieren? (Tipp für Eltern: Mit einer Eltern-PIN geht das nur mit euch.)')) await loesen();
-          return;
-        }
-        const box = document.createElement('div');
-        box.className = 'card gs-pin';
-        box.innerHTML = `<p style="margin-top:0"><strong>Eltern:</strong> PIN eingeben, um den Gutschein einzulösen.</p>
-          <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" style="text-align:center;font-size:24px;letter-spacing:6px">
-          <div class="btn-row"><button class="btn">Einlösen</button><button class="btn secondary">Abbrechen</button></div>`;
-        root.querySelector('.gs-pin')?.remove();
-        btn.closest('[data-gs]').after(box);
-        const inp = box.querySelector('input');
-        const [ok, ab] = box.querySelectorAll('button');
-        const pruefen = async () => { if (await pinPruefen(inp.value)) await loesen(); else { toast('Falsche PIN.'); inp.value = ''; } };
-        ok.onclick = pruefen;
-        inp.onkeydown = (e) => { if (e.key === 'Enter') pruefen(); };
-        ab.onclick = () => box.remove();
-        inp.focus();
-      });
-    }
   };
 }
 
@@ -290,12 +259,6 @@ export function elternSperren() { elternOffen = false; }
 async function hash(pin, salt) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-/** Eltern-PIN prüfen: true/false, null = keine PIN festgelegt */
-export async function pinPruefen(pin) {
-  const rec = await db.getMeta('elternPin');
-  if (!rec) return null;
-  return (await hash(pin, rec.salt)) === rec.hash;
 }
 
 export async function elternView(_p, ctx) {
@@ -363,7 +326,7 @@ export async function elternView(_p, ctx) {
     tests.sort((a, c) => c.zeitpunkt.localeCompare(a.zeitpunkt));
     return `<div class="card">
       <h2 data-h="3" style="margin-top:0">${avatarHtml(p.avatar, 22)} ${esc(p.name)}</h2>
-      <p class="small">Zuletzt aktiv: <strong>${letzte ? datum(letzte) : 'noch nie'}</strong> · Serie: <strong>${plural(b.serie.aktuell, 'Tag', 'Tage')}</strong> (Rekord ${b.serie.rekord}) · ⭐ ${b.punkte}</p>
+      <p class="small">Zuletzt aktiv: <strong>${letzte ? datum(letzte) : 'noch nie'}</strong> · Serie: <strong>${plural(serieJetzt(b), 'Tag', 'Tage')}</strong> (Rekord ${b.serie.rekord}) · ⭐ ${b.punkte}</p>
       <h3 data-h="4" class="muted small">ANTWORTEN DER LETZTEN 7 TAGE</h3>
       <div class="woche">${tage.map((t) => `<div><span style="height:${Math.round(proTag.get(t) / max * 56) + 2}px"></span><small>${new Date(t + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short' })}</small><b>${proTag.get(t)}</b></div>`).join('')}</div>
       <p class="small">Trefferquote insgesamt: <strong>${quote} %</strong> bei ${anzahl} Antworten</p>
@@ -376,18 +339,22 @@ export async function elternView(_p, ctx) {
     </div>`;
   }));
   const G = await import('./gutscheine.js');
+  for (const p of profile) await G.pruefe(p.id).catch(() => []);   // schon Erreichtes sofort freischalten
   const gsDaten = await Promise.all(profile.map(async (p) => ({ p, ...(await G.daten(p.id)) })));
   const gsListe = gsDaten.map(({ p, b, tests }) => {
     const offen = b.freigeschaltet.filter((f) => !f.eingeloestAm);
     const aktive = b.gutscheine.filter((g) => !g.erledigt);
-    if (!offen.length && !aktive.length) return '';
+    const eingeloest = b.freigeschaltet.filter((f) => f.eingeloestAm).sort((x, y) => y.eingeloestAm.localeCompare(x.eingeloestAm));
+    if (!offen.length && !aktive.length && !eingeloest.length) return '';
     return `<h3 data-h="4" style="margin:14px 0 6px">${avatarHtml(p.avatar, 20)} ${esc(p.name)}</h3>
       ${offen.map((f) => G.gutscheinHtml(f, `<div class="small muted">freigeschaltet am ${datum(f.am)}</div><button class="btn ok gs-knopf" data-gs-ein="${esc(p.id)}|${esc(f.id)}">✓ Als eingelöst markieren</button>`)).join('')}
-      ${aktive.map((g) => `<div class="gs-mit-weg">${G.fortschrittHtml(g, b, tests)}<button class="btn danger klein-weg" data-gs-weg="${esc(p.id)}|${esc(g.id)}" aria-label="Gutschein löschen">🗑️</button></div>`).join('')}`;
+      ${aktive.map((g) => `<div class="gs-mit-weg">${G.fortschrittHtml(g, b, tests)}<button class="btn danger klein-weg" data-gs-weg="${esc(p.id)}|${esc(g.id)}" aria-label="Gutschein löschen">🗑️</button></div>`).join('')}
+      ${eingeloest.length ? `<details class="anbieter"><summary>Schon eingelöst (${eingeloest.length})</summary><ul class="small">
+        ${eingeloest.map((f) => `<li>${esc(f.emoji || '🎁')} ${esc(f.text)} – freigeschaltet ${datum(f.am)}, eingelöst ${datum(f.eingeloestAm)}</li>`).join('')}</ul></details>` : ''}`;
   }).join('');
   const gsKarte = `<div class="card" id="gs-karte">
       <h2 data-h="3" style="margin-top:0">🎟️ Gutscheine</h2>
-      <p class="small">Eigene Belohnungen mit eigenem Text, z. B. „Cheeseburger bei McDonald's“ oder „15 Minuten extra Gaming“. Dein Kind schaltet sie durch Lernen frei, sieht den Fortschritt unter „Erfolge“ und bekommt am Ende der Übung eine große Einblendung. Einlösen geht nur mit deiner PIN.</p>
+      <p class="small">Eigene Belohnungen mit eigenem Text, z. B. „Cheeseburger bei McDonald's“ oder „15 Minuten extra Gaming“. Dein Kind schaltet sie durch Lernen frei, sieht sie auf der Startseite unter „Meine Gutscheine“ und bekommt am Ende der Übung eine große Einblendung. Als eingelöst markieren können Sie hier – oder Ihr Kind selbst.</p>
       ${gsListe || '<p class="muted small">Noch keine Gutscheine angelegt.</p>'}
       <div id="gs-form"></div>
       <button class="btn soft block" id="gs-neu" style="margin-top:12px">➕ Neuen Gutschein anlegen</button>

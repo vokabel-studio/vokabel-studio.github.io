@@ -1,11 +1,12 @@
 // Gutscheine: Eltern legen Belohnungen mit eigenem Text an (z. B. „Cheeseburger“, „15 Minuten extra Gaming“).
-// Das Kind schaltet sie durch Lernen frei; eingelöst werden sie nur mit der Eltern-PIN.
+// Das Kind schaltet sie durch Lernen frei; als eingelöst markieren können Kind oder Eltern.
+// Geprüft wird nach jeder Übung und beim Öffnen von Startseite, „Meine Gutscheine“ und Eltern-Bereich.
 // Gespeichert je Profil im Datensatz „belohnungen“ (kommt damit auch in die Sicherung):
 //   b.gutscheine    = [{ id, gruppe, text, emoji, art, anzahl, minProzent, wiederholen, startWert, erstelltAm, erreicht, erledigt }]
 //   b.freigeschaltet = [{ id, gutscheinId, text, emoji, am, eingeloestAm }]
 import * as db from './db.js';
 import { uid, esc } from './util.js';
-import { hole } from './belohnung.js';
+import { hole, serieJetzt } from './belohnung.js';
 import * as fx from './effekte.js';
 
 export const ARTEN = {
@@ -43,7 +44,7 @@ function rohwert(art, b) {
   if (art === 'uebungen') return (b.zaehler.sitzungen || 0) + (b.zaehler.tests || 0);
   if (art === 'lerntage') return b.zaehler.lerntage || 0;
   if (art === 'punkte') return b.punkte || 0;
-  if (art === 'serie') return b.serie.aktuell || 0;
+  if (art === 'serie') return serieJetzt(b);
   return 0;
 }
 
@@ -104,7 +105,8 @@ export async function pruefe(profilId) {
     const s = stand(g, b, tests);
     const soll = g.wiederholen ? Math.floor(s / g.anzahl) : (s >= g.anzahl ? 1 : 0);
     while (g.erreicht < soll) {
-      const f = { id: uid('gf'), gutscheinId: g.id, text: g.text, emoji: g.emoji, am: new Date().toISOString(), eingeloestAm: null };
+      // feste ID je Gutschein und Durchgang: schalten zwei Geräte denselben frei, bleibt es nach dem Abgleich einer
+      const f = { id: `gf-${g.id}-${g.erreicht + 1}`, gutscheinId: g.id, text: g.text, emoji: g.emoji, am: new Date().toISOString(), eingeloestAm: null };
       b.freigeschaltet.push(f); neu.push(f);
       g.erreicht++;
     }
@@ -133,7 +135,7 @@ export function feiere(liste) {
   box.innerHTML = `<div class="gs-overlay-karte" role="dialog" aria-label="Gutschein freigeschaltet">
     <div class="gs-overlay-kopf">🎟️ Gutschein freigeschaltet!</div>
     ${gutscheinHtml(f)}
-    <p class="small muted">Zeig ihn deinen Eltern – du findest ihn unter „Erfolge“.</p>
+    <p class="small muted">Zeig ihn deinen Eltern – du findest ihn auf der Startseite unter „Meine Gutscheine“.</p>
     <button class="btn block">Super! 🎉</button></div>`;
   document.body.appendChild(box);
   fx.konfetti(3, { erzwingen: !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches });
